@@ -1,1 +1,132 @@
+Concept	Explanation
+Structure	A binary tree (sometimes N-ary) where every non-leaf node’s value = hash(left child + right child).
+Leaf Node	Contains actual data (file content or its hash).
+Internal Node	Hash of concatenated hashes of its children.
+Root Hash	Top node’s hash — if it changes, something below changed.
+Verification	To verify a file, recompute its path to root and compare with stored root hash.
+
+        Root = H(H1 + H2)
+       /              \
+   H1 = H(F1+F2)     H2 = H(F3+F4)
+   /   \              /   \
+ F1   F2            F3   F4
+If even F3 changes → H2 changes → Root changes.
+-----------------------------------------------------------------------------------------------+
+Output flow : 
+
+Input:  List of simulated files + contents
+ ↓
+Step 1: Compute individual file hashes
+ ↓
+Step 2: Build Merkle Tree (level-wise using queue)
+ ↓
+Step 3: Store root hash
+ ↓
+Step 4: Verify file changes (simulate tamper)
+ ↓
+Step 5: Measure performance and export results
+ ↓
+Output: Root hash, verification result, timing data
+
+In my module, each file is stored as a leaf node with its hash value, and each internal node stores the hash of its child nodes’ hashes.
+I used queues for level-wise construction, stacks/recursion for verification, and a hash map for file lookup.
+This lets me test how secure and efficient the Merkle Tree is in comparison with N-ary Tree and Trie structures.
+----------------------------------------------------------------------------------------
+Goal: Check if a file’s data has been modified.
+Flow:
+1.	User selects a file (say C.txt).
+2.	Get its node from the Hash Map.
+3.	Recompute its hash → if same, continue.
+4.	Using a Stack (or recursive function), go up the tree:
+o	For each parent, recompute parent hash from its children.
+o	Push parent node on Stack → ensures correct order.
+5.	Compare final computed root hash with stored Merkle Root.
+o	If same → Data intact
+o	If different → Data tampered
+👉 Concepts used: Stack (for backtracking), Hash propagation, Recursion.
+Goal: Combine leaves into higher levels until one root remains.
+Flow:
+1.	Enqueue all leaf nodes into a Queue.
+2.	While Queue has >1 node:
+o	Dequeue two nodes (left, right).
+o	Create a new parent node whose data = hash(left.data + right.data).
+o	Enqueue this parent back.
+3.	The final node in the queue is your root node.
+4.	Store its hash as the Merkle Root.
+👉 Concepts used: Queue operations (enqueue/dequeue), Binary tree linking, Recursion, Hashing.
++------------------------------+
+|   Input: List of Files       |
++------------------------------+
+               |
+               v
++------------------------------+
+| Compute Hash for Each File   |
+| → Create Leaf Nodes          |
+| → Store in Hash Map          |
++------------------------------+
+               |
+               v
++------------------------------+
+| Build Tree using Queue       |
+| - Pair nodes level-wise      |
+| - Compute Parent Hash        |
+| - Enqueue Parent Node        |
++------------------------------+
+               |
+               v
++------------------------------+
+| Obtain Root Hash             |
++------------------------------+
+               |
+               v
++------------------------------+
+| Verify File Integrity        |
+| - Lookup File Node (Map)     |
+| - Rehash + Stack Propagate   |
+| - Compare Root Hashes        |
++------------------------------+
+               |
+               v
++------------------------------+
+| Record Performance           |
+| → Build time, Verify time    |
++------------------------------+
+               |
+               v
++------------------------------+
+| Output Results to Analyzer   |
++------------------------------+
+
+When you run:
+./merkle_demo
+here’s what happens conceptually:
+1.	It creates a few example files (in memory, not real files) with names and contents like:
+2.	fileA → "hello world"
+3.	fileB → "goodbye world"
+4.	It computes each file’s SHA256 hash.
+(So each leaf node has a unique 64-character hexadecimal hash.)
+5.	It builds the tree upward:
+o	Combines leaf hashes two at a time.
+o	Hashes the combination to form parent nodes.
+o	Repeats until only one root remains.
+6.	It prints out the tree level order, something like:
+o	Root: 3f78d912... (Merkle Root)
+o	Level 1: a8c8f23... bba7c21...
+o	Level 2: fileA(hash=abc123...), fileB(hash=def456...)
+7.	Then, the program tests verification:
+o	Verifies each file → prints intact ✅
+o	Tamper one file → recompute → prints tampered ⚠️
+o	Rebuild → prints new root.
+So, you can visually see how even a small change affects the entire root hash.
+// COMMANDS FOR O/P
+gcc main_cli.c merkle.c sha256.c -O2 -std=c11 -o merkle_cli.exe
+or 
+gcc -o merkle_demo.exe main_cli.c merkle.c sha256.c -lm
+and then 
+./merkle_demo.exe --build 1000 --runs 3 --seed 42 --csv output_merkle.csv
+Explanation:
+•	--build 1000 → Builds Merkle trees with 1000 leaves.
+•	--runs 3 → Repeats 3 times (you’ll get timing for each run).
+•	--seed 42 → Keeps it deterministic.
+•	--csv output_merkle.csv → Saves results in CSV.
 
